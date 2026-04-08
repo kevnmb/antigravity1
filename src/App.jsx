@@ -16,7 +16,7 @@ function App() {
     setToast(null);
 
     try {
-      const resp = await fetch('/api/generate', {
+      const resp = await fetch('/api/generateSong', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
