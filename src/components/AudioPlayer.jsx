@@ -50,8 +50,8 @@ export default function AudioPlayer({ songData }) {
   // Extract from probable response structure
   // Some wrappers return array `data`, some return single object.
   const info = Array.isArray(songData) ? songData[0] : songData?.data?.[0] || songData?.data || songData;
-  const audioUrl = info?.audio_url;
-  const imageUrl = info?.image_url;
+  const audioUrl = info?.audio_url || info?.audioUrl || info?.streamAudioUrl || info?.stream_audio_url;
+  const imageUrl = info?.image_url || info?.imageUrl;
   const title = info?.title || "Generated Track";
   const tags = info?.tags || "";
 
