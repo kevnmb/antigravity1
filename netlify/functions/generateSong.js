@@ -11,8 +11,7 @@ export const handler = async (event) => {
     }
 
     const API_KEY = process.env.SUNO_API_KEY;
-    // We assume a standard placeholder/wrapper since Suno lacks one official REST API.
-    const API_URL = process.env.SUNO_API_URL || 'https://api.suno.ai/api/generate'; 
+    const API_URL = process.env.SUNO_API_URL || 'https://api.sunoapi.org/api/v1/generate'; 
 
     const response = await fetch(API_URL, {
       method: 'POST',
@@ -22,17 +21,23 @@ export const handler = async (event) => {
       },
       body: JSON.stringify({
         prompt: prompt,
-        make_instrumental: false,
-        wait_audio: true // wait for audio to generation to complete
+        customMode: false,
+        instrumental: false
       })
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      return { statusCode: response.status, body: JSON.stringify({ error: `Suno API Error: ${errorText}` }) };
+      return { statusCode: response.status, body: JSON.stringify({ error: `API Error: ${errorText}` }) };
     }
 
     const data = await response.json();
+    
+    // Check if the provider returns a custom error code
+    if (data.code && data.code !== 200) {
+      return { statusCode: 400, body: JSON.stringify({ error: `API Error: ${data.msg || 'Unknown Provider Error'}` }) };
+    }
+
     return {
       statusCode: 200,
       headers: {

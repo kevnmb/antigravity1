@@ -18,9 +18,7 @@ function App() {
     try {
       const resp = await fetch('/api/generateSong', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt })
       });
 
@@ -29,16 +27,51 @@ function App() {
         throw new Error(errorData.error || `Error ${resp.status}`);
       }
 
-      const data = await resp.json();
-      
-      // Suno API wrapper might return the actual track or an array
-      setSongData(data);
-      setToast({ message: 'Song generated successfully!', type: 'success' });
-      
+      const initialData = await resp.json();
+      const taskId = initialData?.data?.taskId;
+
+      // If the provider returned the song immediately instead
+      if (!taskId) {
+        setSongData(initialData);
+        setToast({ message: 'Song generated successfully!', type: 'success' });
+        setIsGenerating(false);
+        return;
+      }
+
+      setToast({ message: 'Request accepted! Composing your song (usually takes ~30 seconds)...', type: 'success' });
+
+      // The provider uses an async background task. Let's poll for the result.
+      const pollInterval = setInterval(async () => {
+        try {
+          const statusResp = await fetch(`/api/checkStatus?taskId=${taskId}`);
+          if (!statusResp.ok) return; // ignore temporary network errors
+          
+          const statusData = await statusResp.json();
+          const currentState = statusData?.data?.status;
+
+          if (currentState === 'SUCCESS') {
+            clearInterval(pollInterval);
+            setIsGenerating(false);
+            
+            // Extract the actual generated track metadata
+            const trackList = statusData.data.response?.sunoData;
+            setSongData(trackList);
+            setToast({ message: 'Masterpiece completed!', type: 'success' });
+            
+          } else if (currentState && currentState.includes('FAILED') || currentState === 'SENSITIVE_WORD_ERROR') {
+            clearInterval(pollInterval);
+            setIsGenerating(false);
+            setToast({ message: `Generation Failed: ${currentState}`, type: 'error' });
+          }
+          // If PENDING, TEXT_SUCCESS, FIRST_SUCCESS -> keep polling
+        } catch (pollErr) {
+          console.error("Polling error:", pollErr);
+        }
+      }, 5000); // Check every 5 seconds so we don't spam their API
+
     } catch (err) {
       console.error(err);
-      setToast({ message: err.message || 'Failed to generate song. Please try again.', type: 'error' });
-    } finally {
+      setToast({ message: err.message || 'Failed to request song. Please try again.', type: 'error' });
       setIsGenerating(false);
     }
   };
