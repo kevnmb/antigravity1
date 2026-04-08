@@ -22,7 +22,8 @@ export const handler = async (event) => {
       body: JSON.stringify({
         prompt: prompt,
         customMode: false,
-        instrumental: false
+        instrumental: false,
+        model: "V5"
       })
     });
 
