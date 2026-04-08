@@ -23,7 +23,8 @@ export const handler = async (event) => {
         prompt: prompt,
         customMode: false,
         instrumental: false,
-        model: "V5"
+        model: "V5",
+        callBackUrl: "https://api.example.com/callback"
       })
     });
 
